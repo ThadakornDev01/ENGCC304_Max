@@ -1,0 +1,232 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// โครงสร้างสินค้า
+typedef struct {
+    char name[60]; //กำหนดจำนวนตัวอักษรของชื่อสินค้า
+    int price; //กำหนดตัวแปรราคา
+    int stock; //กำหนดตัวแปรที่จะเก็บจำนวนสินค้า
+} Product;
+
+// โครงสร้างเงินทอน
+typedef struct {
+    int value; //มูลค่าของเงิน
+    int count; //จำนวนเหรียน/ธนาบัตร
+} Coin;
+
+// ฟังก์ชันคำนวณเงินทอน
+int calculateChange(int change, Coin* coins, int size) {
+    printf("=== เงินทอน ===\n");
+    // เรียงจากค่ามากไปน้อย
+    for (int i = 0; i < size; i++) {
+        for (int j = i + 1; j < size; j++) {
+            if (coins[i].value < coins[j].value) { //บรรทัดนี้จะลดจำนวนเงินทอนที่ต้องจ่ายลง
+                Coin temp = coins[i];
+                //บรรทัดนี้จะลดจำนวนเหรียญหรือธนบัตรในตู้ลงหนึ่งหน่วย
+                coins[i] = coins[j];
+                //ตัวแปรนี้จะนับจำนวนเงินชนิดนั้นที่ถูกทอนออกไป
+                coins[j] = temp;
+            }
+        }
+    }
+
+    for (int i = 0; i < size; i++) {
+        int count = 0;
+        while (change >= coins[i].value && coins[i].count > 0) {
+            change -= coins[i].value;
+            coins[i].count--;
+            count++;
+        }
+        if (count > 0) {
+            printf("%d บาท x %d\n", coins[i].value, count);
+        }
+    }
+    return change;
+}
+
+void displayMainAndGetChoice(Product** products, int product_count, int* choice) {
+    printf("=== ตู้ตะพาบลอย ===\n");
+    for (int i = 0; i < product_count; i++) {
+        printf("%d. %s ราคา %d บาท (คงเหลือ: %d)\n", i + 1, products[i]->name, products[i]->price, products[i]->stock);
+    }
+    printf("7. ดูรายการสินค้าในตะกร้า\n");
+    printf("8. ยกเลิกรายการ\n");
+    printf("กรุณาเลือกสินค้า (1-8): ");
+    scanf(" %d", choice);
+}
+
+void displayCartAndPayment(Product** cart, int cart_count, Coin** coins, int coin_count, int total_price) {
+    int cart_choice;
+    while(1){
+        printf("\n=== รายการสินค้าในตะกร้า ===\n");
+        if (cart_count == 0) {
+            printf("  ตะกร้าว่างเปล่า\n");
+        } else {
+            for(int i = 0; i < cart_count; i++){
+                printf("  - %s (1 ชิ้น)\n", cart[i]->name);
+            }
+        }
+        printf("=========================\n");
+        printf("1. ชำระเงิน\n");
+        printf("2. จ่ายเงินแบบQRcod\n");
+        printf("3. กลับไปเมนูหลัก\n");
+        printf("4. ยกเลิกและออกจากโปรแกรม\n");
+        printf("กรุณาเลือก (1-4): ");
+        scanf(" %d", &cart_choice);
+
+        if (cart_choice == 1) {
+            if (total_price == 0) {
+                printf("ไม่มีสินค้าในตะกร้า. กลับไปเมนูหลัก\n");
+                return;
+            }
+            
+            int money, change;
+            printf("\n=== ขั้นตอนการชำระเงิน ===\n");
+            printf("รายการสินค้าที่เลือก:\n");
+            for (int i = 0; i < cart_count; i++) {
+                printf("- %s ราคา: %d บาท\n", cart[i]->name, cart[i]->price);
+            }
+            printf("ราคารวม: %d บาท\n", total_price);
+            printf("ใส่เงิน: ");
+            scanf(" %d", &money);
+
+            if (money < total_price) {
+                printf("เงินไม่พอ! คืนเงินทั้งหมด %d บาท\n", money);
+                for(int i = 0; i < cart_count; i++) {
+                    cart[i]->stock++;
+                }
+            } else {
+                change = money - total_price;
+                printf("\nคุณซื้อสินค้าเรียบร้อย\n");
+                if (change > 0) {
+                    Coin coin_array[coin_count];
+                    for (int i = 0; i < coin_count; i++) {
+                        coin_array[i] = *coins[i];
+                    }
+                    int remain = calculateChange(change, coin_array, coin_count);
+                    if (remain > 0) {
+                        printf("ไม่สามารถทอนเงินครบได้ คืนเงินทั้งหมด %d บาท\n", money);
+                        for(int i = 0; i < cart_count; i++) {
+                            cart[i]->stock++;
+                        }
+                    }
+                } else {
+                    printf("ไม่ต้องทอนเงิน\n");
+                }
+            }
+            printf("\nขอบคุณที่ใช้บริการ!\n");
+            exit(0); // ออกจากโปรแกรมเมื่อทำรายการเสร็จ
+        } else if (cart_choice == 2) {
+            printf("ขอบคุณที่ใช้บริการครับ");
+            exit(0);
+        } else if (cart_choice == 3) {
+            return; // กลับไปเมนูหลัก
+        } else if (cart_choice == 4) {
+            printf("ขอบคุณที่ใช้บริการ!\n");
+            exit(0); // ออกจากโปรแกรม
+        } else {
+            printf("รายการเกิดข้อผิดพลาด กรุณาเลือกใหม่\n");
+        }
+    }
+}
+
+int main() {
+    // สร้าง Product pointers และกำหนดค่า
+    Product* a1 = (Product*)malloc(sizeof(Product));
+    Product* a2 = (Product*)malloc(sizeof(Product));
+    Product* a3 = (Product*)malloc(sizeof(Product));
+    Product* a4 = (Product*)malloc(sizeof(Product));
+    Product* a5 = (Product*)malloc(sizeof(Product));
+    Product* a6 = (Product*)malloc(sizeof(Product));
+
+    if (!a1 || !a2 || !a3 || !a4 || !a5 || !a6) {
+        printf("Memory allocation failed!\n");
+        return 1;
+    }
+
+    *a1 = (Product){"น้ำเขียว", 12, 5};
+    *a2 = (Product){"ลาเต้หวานชิปหาย ", 35, 3};
+    *a3 = (Product){"โค้ก", 10, 1};
+    *a4 = (Product){"จิ้นส้มหมก", 15, 2};
+    *a5 = (Product){"ถั่วแปป", 20, 0};
+    *a6 = (Product){"เมล็ดทานตะวัน", 13, 10};
+
+    // สร้าง Coin pointers และกำหนดค่า
+    Coin* c1 = (Coin*)malloc(sizeof(Coin));
+    Coin* c2 = (Coin*)malloc(sizeof(Coin));
+    Coin* c3 = (Coin*)malloc(sizeof(Coin));
+    Coin* c4 = (Coin*)malloc(sizeof(Coin));
+    Coin* c5 = (Coin*)malloc(sizeof(Coin));
+    Coin* c6 = (Coin*)malloc(sizeof(Coin));
+    Coin* c7 = (Coin*)malloc(sizeof(Coin));
+
+    if (!c1 || !c2 || !c3 || !c4 || !c5 || !c6 || !c7) {
+        printf("Memory allocation failed!\n");
+        return 1;
+    }
+
+    *c1 = (Coin){1, 20};
+    *c2 = (Coin){2, 20};
+    *c3 = (Coin){5, 15};
+    *c4 = (Coin){10, 15};
+    *c5 = (Coin){20, 10};
+    *c6 = (Coin){50, 8};
+    *c7 = (Coin){100, 5};
+
+    Product* products[] = {a1, a2, a3, a4, a5, a6};
+    int product_count = 6;
+    Coin* coins[] = {c1, c2, c3, c4, c5, c6, c7};
+    int coin_count = 7;
+
+    int choice;
+    int total_price = 0;
+    
+    Product* cart[6] = {NULL};
+    int cart_count = 0;
+
+    while (1) {
+        displayMainAndGetChoice(products, product_count, &choice);
+
+        if (choice == 8) {
+            printf("ขอบคุณที่ใช้บริการ!\n");
+            break;
+        } else if (choice == 7) {
+            displayCartAndPayment(cart, cart_count, coins, coin_count, total_price);
+            if (cart_count == 0) { // หากมีการกลับจากหน้าตะกร้าแต่ยังไม่มีสินค้าในตะกร้า
+                continue;
+            }
+            if (total_price > 0) { // หากมีการกลับจากหน้าชำระเงินแต่ยังไม่ได้ซื้อ
+                // ไม่จำเป็นต้องทำอะไร เนื่องจาก displayCartAndPayment จะจบโปรแกรมหากชำระเงิน
+            }
+        } else if (choice >= 1 && choice <= product_count) {
+            if (products[choice - 1]->stock > 0) {
+                printf("คุณเลือก %s\n", products[choice - 1]->name);
+                products[choice - 1]->stock--;
+                cart[cart_count++] = products[choice - 1];
+                total_price += products[choice - 1]->price;
+            } else {
+                printf("สินค้าหมดแล้ว!\n");
+            }
+        } else {
+            printf("รายการเกิดข้อผิดพลาด กรุณาเลือกใหม่\n");
+        }
+    }
+
+    // Free memory
+    for (int i = 0; i < product_count; i++) free(products[i]);
+    for (int i = 0; i < coin_count; i++) free(coins[i]);
+
+    return 0;
+}
+
+
+
+// ฟังก์ชันแสดงเงินทอนที่เหลือในตู้
+//void displayRemainingCoins(Coin** coins, int coin_count) {
+    //printf("\n=== เงินทอนที่เหลือในตู้ ===\n");
+    //for (int i = 0; i < coin_count; i++) {
+        //printf("%d บาท: %d เหรียญ/ฉบับ\n", coins[i]->value, coins[i]->count//);
+    //}
+    //printf("=========================\n");
+//}
