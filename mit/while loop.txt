@@ -1,0 +1,25 @@
+#include <stdio.h>
+
+int main() {
+    int n,i = 2;
+    printf("ใส่เลขตรงนี้ : ");
+    scanf("%d", &n);
+    
+    i = n;
+    while (i >= 2){ // เริ่มจาก n ลงมาเรื่อย ๆ จนถึง 2
+        int j = 2, P = 1;
+        
+        while (j < i) {
+            if (i % j == 0){
+            P = 0;
+            break;
+            }
+        j++;
+    }
+    if(P){
+        printf("%d  ", i);
+    }
+    i--;
+    }
+    return 0;
+}
